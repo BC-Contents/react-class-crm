@@ -1,127 +1,175 @@
-# Guía de React + Tailwind CSS
+# Guía de React: `useState` y `useEffect`
 
-Este proyecto está diseñado como material didáctico para aprender a **utilizar y estructurar Tailwind CSS dentro de React**, analizando cómo aplicar clases de utilidad, estados interactivos y diseño moderno directamente en componentes.
-
----
-
-## 🛠️ Paso 1: Configurar Tailwind CSS v4 con Vite
-
-En este proyecto utilizamos la integración oficial de Tailwind CSS v4 con Vite:
-
-### 1. Instalación de dependencias
-
-```bash
-npm install tailwindcss @tailwindcss/vite
-```
-*(o con pnpm: `pnpm add -D tailwindcss @tailwindcss/vite`)*
-
-### 2. Configuración en [`vite.config.js`](./vite.config.js)
-
-```javascript
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-
-export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-  ],
-})
-```
-
-> [!IMPORTANT]
-> ### ⚠️ Anotación: Si el proyecto no funciona, quita la línea de Babel
-> Si el proyecto da error al arrancar o compilar por plugins experimentales o incompatibilidad de Babel, abre [`vite.config.js`](./vite.config.js) y **quita la línea de Babel**:
->
-> ```javascript
-> // ❌ Quitar esta línea dentro de plugins:
-> babel({ presets: [reactCompilerPreset()] })
-> ```
->
-> y elimina también la importación de Babel arriba:
-> ```javascript
-> // ❌ Quitar este import si ya no se utiliza:
-> import babel from '@rolldown/plugin-babel'
-> ```
-> Con eso el archivo debe quedar únicamente con los plugins `react()` y `tailwindcss()`.
-
-### 3. Importación en [`src/index.css`](./src/index.css)
-
-Tailwind CSS v4 solo requiere una línea en el archivo de estilos global:
-
-```css
-@import "tailwindcss";
-```
+Este proyecto está diseñado como material didáctico para aprender y dominar dos de los Hooks más importantes de React: **`useState`** (manejo de estado local) y **`useEffect`** (manejo de efectos secundarios y ciclo de vida del componente).
 
 ---
 
-## 🧱 Paso 2: El Componente `Card.jsx`
+## 🔢 1. El Hook `useState` (`Counter.jsx`)
 
-En este proyecto tenemos un único componente ubicado en [`src/components/Card.jsx`](./src/components/Card.jsx):
+### ¿Qué es `useState`?
+`useState` es un Hook de React que permite añadir **estado local** a un componente funcional. Cuando el estado cambia mediante su función actualizadora, React **vuelve a renderizar** el componente automáticamente para reflejar el nuevo valor en la pantalla.
+
+### Sintaxis básica
+```jsx
+const [estado, setEstado] = useState(valorInicial)
+```
+- **`estado`**: El valor actual de la variable de estado.
+- **`setEstado`**: La función encargada de actualizar ese valor y disparar el re-renderizado.
+- **`valorInicial`**: El valor con el que arranca el estado en el primer renderizado.
+
+### Implementación en [`src/components/Counter.jsx`](./src/components/Counter.jsx)
 
 ```jsx
-function Card() {
-  return (
-    <article className="bg-[#1c1d24] border border-white/10 rounded-2xl p-6 flex flex-col justify-between hover:border-purple-500/40 transition-all hover:-translate-y-1 shadow-lg">
-      <div>
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-xl font-semibold text-white">
-            Aprende React
-          </h3>
-          <span className="rounded-full bg-purple-500/15 px-3 py-1 text-xs font-medium text-purple-300">
-            Frontend
-          </span>
-        </div>
-        <p className="text-gray-400 text-sm leading-relaxed mb-6">
-          Descubre cómo crear interfaces modernas y reutilizables con
-          componentes de React.
-        </p>
-      </div>
+import { useState } from "react"
 
-      <div className="pt-4 border-t border-white/5 flex justify-end">
-        <button
-          type="button"
-          className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:border-purple-400 hover:text-purple-300"
-        >
-          Ver más
-        </button>
-      </div>
-    </article>
+function Counter() {
+    const [count, setCount] = useState(0)
+
+  return (
+    <div>
+        <h1>{count}</h1>
+        <button onClick={() => setCount((c) => c - 1)}>-1</button>
+        <button onClick={() => setCount(0)}>Reiniciar</button>
+        <button onClick={() => setCount((c) => c + 1)}>+1</button>
+    </div>
   )
 }
 
-export default Card
+export default Counter
 ```
 
-### Desglose de Clases de Tailwind CSS utilizadas:
-
-| Elemento | Clases de Tailwind | Explicación |
-| :--- | :--- | :--- |
-| **Contenedor (`<article>`)** | `bg-[#1c1d24]` | Color de fondo personalizado en formato hexadecimal. |
-| | `border border-white/10` | Borde sutil con color blanco al 10% de opacidad. |
-| | `rounded-2xl` | Bordes redondeados pronunciados. |
-| | `p-6` | Relleno interno (*padding*) en todos los lados. |
-| | `flex flex-col justify-between` | Disposición en columna distribuyendo el espacio vertical. |
-| | `hover:border-purple-500/40` | Al pasar el cursor, el borde cambia a morado translúcido. |
-| | `transition-all` | Suaviza cualquier cambio de estado (hover, movimiento). |
-| | `hover:-translate-y-1` | Micro-animación que eleva la tarjeta hacia arriba al hacer hover. |
-| | `shadow-lg` | Sombra exterior para dar sensación de elevación. |
-| **Cabecera (`<div>`)** | `flex items-center justify-between gap-3 mb-4` | Alinea el título y la etiqueta en extremos opuestos con separación y margen inferior. |
-| **Título (`<h3>`)** | `text-xl font-semibold text-white` | Tamaño grande, peso seminegrita y color de texto blanco. |
-| **Etiqueta (`<span>`)** | `rounded-full bg-purple-500/15 px-3 py-1 text-xs font-medium text-purple-300` | Forma de píldora con fondo morado suave, texto pequeño y padding ajustado. |
-| **Descripción (`<p>`)** | `text-gray-400 text-sm leading-relaxed mb-6` | Color gris legible, tamaño reducido, interlineado cómodo y margen inferior. |
-| **Separador (`<div>`)** | `pt-4 border-t border-white/5 flex justify-end` | Línea divisoria superior casi invisible, con el botón alineado a la derecha. |
-| **Botón (`<button>`)** | `rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:border-purple-400 hover:text-purple-300` | Botón delineado interactivo con efectos de hover en color morado. |
+### Puntos clave explicados:
+1. **Inicialización (`useState(0)`)**: El contador empieza en `0`.
+2. **Actualización con función callback (`setCount((c) => c + 1)`)**: En lugar de pasar `count + 1` directamente, pasamos una función `(c) => c + 1`. Esto es una **buena práctica en React** porque garantiza que siempre trabajamos con el valor más reciente del estado (`c`), evitando errores si ocurren múltiples actualizaciones seguidas.
+3. **Actualización con valor directo (`setCount(0)`)**: En el botón "Reiniciar", como no dependemos del valor anterior sino que queremos fijarlo directamente a `0`, le pasamos `0` como argumento.
 
 ---
 
-## 🚀 Paso 3: Uso del Componente en `App.jsx`
+## ⏱️ 2. El Hook `useEffect` (`Timer.jsx`)
 
-En [`src/App.jsx`](./src/App.jsx) se importa y renderiza el componente `Card`:
+### ¿Qué es `useEffect`?
+`useEffect` permite ejecutar **efectos secundarios** (*side effects*) en componentes funcionales, tales como temporizadores (`setInterval`, `setTimeout`), peticiones a APIs (`fetch`), o suscripciones a eventos del navegador.
+
+Su estructura consta de tres partes fundamentales:
+```jsx
+useEffect(() => {
+  // 1. Código del efecto (se ejecuta al montar o cuando cambia una dependencia)
+
+  return () => {
+    // 2. Función de limpieza / cleanup (se ejecuta antes de re-ejecutar el efecto o al desmontar el componente)
+  }
+}, [/* 3. Array de dependencias */])
+```
+
+---
+
+### Evolución del componente `Timer`: De `[]` vacío a `[isActive]`
+
+En clase construimos [`src/components/Timer.jsx`](./src/components/Timer.jsx) en **dos fases** para comprender cómo funciona el array de dependencias `[]`.
+
+#### Fase 1: `useEffect` con el array de dependencias vacío `[]`
+
+Primeramente creamos el temporizador dejando el array de dependencias vacío `[]`:
+
+```jsx
+import { useState, useEffect } from "react"
+
+function Timer() {
+    const [seconds, setSeconds] = useState(0)
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            setSeconds((prev) => prev + 1)
+        }, 1000)
+
+        return () => {
+            clearInterval(intervalId)
+        }
+    }, []) // 👈 Array vacío: solo se ejecuta UNA vez al montar el componente
+
+    return (
+        <div>
+            <h1>{seconds}</h1>
+        </div>
+    )
+}
+```
+
+**¿Por qué funcionaba así?**
+- **Con `[]` vacío**: Le indicamos a React que el efecto **no depende de ningún estado ni prop**, por lo que el `setInterval` se crea **únicamente una vez** cuando el componente aparece en pantalla (*mount*).
+- **Uso de `(prev) => prev + 1`**: Como el efecto solo se ejecuta una vez al principio, usar la función actualizadora `(prev) => prev + 1` permite incrementar los segundos cada segundo sin necesitar incluir `seconds` dentro de `[]`.
+- **Función de limpieza (`clearInterval`)**: Si el componente se elimina de la pantalla (*unmount*), React ejecuta el `return` para detener el intervalo y evitar fugas de memoria (*memory leaks*).
+
+---
+
+#### Fase 2: Añadiendo `[isActive]` al array de dependencias (Versión Final)
+
+Después quisimos añadir un botón para **Pausar y Reanudar** el temporizador mediante un segundo estado: `const [isActive, setIsActive] = useState(true)`.
+
+Si hubiéramos dejado `[]` vacío, el `useEffect` **nunca se enteraría** de que `isActive` cambió de `true` a `false` (o viceversa). Por ello, metimos `[isActive]` dentro de los corchetes:
+
+```jsx
+import { useState, useEffect } from "react"
+
+function Timer() {
+    const [seconds, setSeconds] = useState(0)
+    const [isActive, setIsActive] = useState(true)
+
+    useEffect(() => {
+        if (!isActive) return
+
+        const intervalId = setInterval(() => {
+            setSeconds((prev) => prev + 1)
+        }, 1000)
+
+        return () => {
+            clearInterval(intervalId)
+        }
+    }, [isActive]) // 👈 Se vuelve a ejecutar cada vez que cambia 'isActive'
+
+  return (
+    <div>
+        <h1>{seconds}</h1>
+        <button onClick={() => setIsActive(!isActive)}>
+            {isActive ? 'Pausar' : 'Reanudar'}
+        </button>
+        <button onClick={() => setSeconds(0)}>Reiniciar</button>
+    </div>
+  )
+}
+
+export default Timer
+```
+
+**¿Qué ocurre paso a paso cuando `isActive` está en `[isActive]`?**
+
+1. **Al cargar la página (`isActive` es `true`)**:
+   - Se ejecuta el `useEffect`. Como `isActive` es `true`, no entra en el `if (!isActive) return` y arranca el `setInterval` sumando 1 cada segundo.
+2. **Al pulsar "Pausar" (`isActive` pasa a `false`)**:
+   - React detecta que `isActive` ha cambiado.
+   - **Primero** ejecuta la función de limpieza (`return () => clearInterval(intervalId)`) del efecto anterior, deteniendo el reloj inmediatamente.
+   - **Segundo** vuelve a ejecutar el `useEffect` con el nuevo valor (`isActive = false`). Al llegar a `if (!isActive) return`, sale de la función sin crear ningún intervalo nuevo. El reloj queda pausado.
+3. **Al pulsar "Reanudar" (`isActive` vuelve a `true`)**:
+   - React detecta el cambio en `[isActive]` y vuelve a correr el `useEffect`, creando un nuevo `setInterval` que continúa sumando desde el segundo en que se había quedado.
+
+### Resumen del Array de Dependencias en `useEffect`
+
+| Configuración | Cuándo se ejecuta el efecto | Caso de uso típico |
+| :--- | :--- | :--- |
+| **Sin array** `useEffect(() => {})` | En el primer render y **después de cada renderizado**. | Rara vez usado (cuidado con bucles infinitos). |
+| **Array vacío** `useEffect(() => {}, [])` | **Solo una vez**, cuando el componente se monta. | Cargar datos iniciales o iniciar un timer que no depende de estados externos (Fase 1). |
+| **Con dependencias** `useEffect(() => {}, [isActive])` | Al montarse y **cada vez que `isActive` cambie de valor**. | Reaccionar a cambios de estado o props, como pausar/reanudar un timer (Fase 2). |
+
+---
+
+## 🚀 3. Integración en `App.jsx`
+
+En [`src/App.jsx`](./src/App.jsx) se importan y muestran los componentes [`Counter`](./src/components/Counter.jsx) y [`Timer`](./src/components/Timer.jsx):
 
 ```jsx
 import Card from './components/Card'
+import Counter from './components/Counter'
+import Timer from './components/Timer'
 import './App.css'
 
 function App() {
@@ -130,6 +178,8 @@ function App() {
     <>
       <section className='bg-red-500' id="center">
         <Card/>
+        <Counter/>
+        <Timer/>
       </section>
     </>
   )
@@ -158,6 +208,3 @@ export default App
 
 3. **Abrir en el navegador:**  
    Visita [http://localhost:5173](http://localhost:5173).
-
-> [!WARNING]
-> **Recordatorio:** Si el comando `dev` falla con un error relacionado con Babel, abre [`vite.config.js`](./vite.config.js) y elimina la línea de `babel(...)` y su `import`.

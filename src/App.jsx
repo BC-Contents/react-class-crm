@@ -1,4 +1,6 @@
 import Card from './components/Card'
+import Counter from './components/Counter'
+import Timer from './components/Timer'
 import './App.css'
 
 function App() {
@@ -7,6 +9,8 @@ function App() {
     <>
       <section className='bg-red-500' id="center">
         <Card/>
+        <Counter/>
+        <Timer/>
       </section>
     </>
   )
