@@ -1,328 +1,43 @@
-# Guía Paso a Paso: Navegación con React Router y `useParams`
+# Guía Paso a Paso: Desplegar un Proyecto de React + Vite en GitHub Pages
 
-Este proyecto está diseñado como material didáctico para aprender a configurar y utilizar **React Router**, creando una **SPA (Single Page Application)** con múltiples rutas, plantillas compartidas (`Layout`), rutas dinámicas con **`useParams`** y página de error 404 sin que el navegador recargue la página.
-
----
-
-## 📁 Estructura de carpetas para el enrutado
-
-Al pasar a una arquitectura con **React Router**, **eliminamos `App.jsx` y `App.css`**, ya que su responsabilidad se divide entre el enrutador (`router/index.jsx`), la plantilla general (`Layout.jsx`) y la página principal (`Home.jsx`):
-
-```text
-src/
-├── Layout/
-│   └── Layout.jsx          # Estructura común (Header, Outlet, Footer)
-├── components/
-│   ├── Card.jsx
-│   ├── Counter.jsx
-│   └── Timer.jsx
-├── pages/
-│   ├── Home/
-│   │   └── Home.jsx        # Página principal ("/") — sustituye al antiguo App.jsx
-│   ├── Contact/
-│   │   └── Contact.jsx     # Página de contacto ("/contacto")
-│   ├── Topics/
-│   │   └── TopicsPage.jsx  # Página dinámica por ID ("/tema/:id") usando useParams
-│   └── NotFound/
-│       └── NotFound.jsx    # Página de error 404 ("*")
-├── router/
-│   └── index.jsx           # Definición de rutas con createBrowserRouter
-├── index.css               # Estilos globales
-└── main.jsx                # Punto de entrada con <RouterProvider />
-```
+Esta guía explica paso a paso todas las configuraciones necesarias para publicar una aplicación de **React con Vite** en **GitHub Pages**, tanto si es un **proyecto básico sin React Router** como si es un **proyecto multipágina con React Router**.
 
 ---
 
-## 🛠️ Paso 1: Instalar React Router
+## 💡 Concepto Previo: ¿Por qué no basta con hacer `git push`?
 
-Instalamos el paquete `react-router` en el proyecto:
+Los navegadores y el servidor de GitHub Pages **no entienden archivos `.jsx`** ni pueden ejecutar directamente la carpeta `src/` o `node_modules/`.
+- **Tus ramas de código (`main`, `react-router`, `github-pages`)**: Guardan el código fuente donde programas.
+- **La rama `gh-pages` (automática)**: Guarda únicamente la carpeta **`dist/`** (tu proyecto ya compilado y transformado a HTML, CSS y JavaScript puro mediante `npm run build`). GitHub Pages leerá esta rama `gh-pages` para mostrar la web en internet.
+
+---
+
+## 🚀 Caso 1: Proyecto de React SIN React Router
+
+Si tu proyecto de React solo tiene componentes dentro de `App.jsx` y **no utiliza `react-router`**, sigue estos **4 pasos**:
+
+### Paso 1: Instalar el paquete `gh-pages`
+Ejecuta en la terminal dentro de tu proyecto:
 
 ```bash
-npm install react-router
-# o con pnpm:
-pnpm add react-router
+npm install -D gh-pages
 ```
+*(Si aparece un aviso de dependencias `ERESOLVE`, añade `--legacy-peer-deps` al final: `npm install -D gh-pages --legacy-peer-deps`)*.
 
 ---
 
-## 🗑️ Paso 2: Eliminar `App.jsx` y `App.css`
+### Paso 2: Configurar `base` en [`vite.config.js`](./vite.config.js)
+GitHub Pages no publica tu proyecto en la raíz del dominio (`https://usuario.github.io/`), sino dentro de una subcarpeta con el **nombre exacto de tu repositorio** (`https://usuario.github.io/nombre-de-tu-repo/`).
 
-Cuando creamos un proyecto nuevo con Vite, por defecto todo se renderiza dentro de `App.jsx`. Sin embargo, al implementar **React Router** con `createBrowserRouter`:
+Abre [`vite.config.js`](./vite.config.js) y añade la propiedad `base` con el nombre de tu repositorio entre barras `/`:
 
-1. **Lo que antes estaba en `App.jsx`** (los componentes `Card`, `Counter`, `Timer`) pasa a vivir en su propia página: [`src/pages/Home/Home.jsx`](./src/pages/Home/Home.jsx).
-2. **La estructura común de la web** (menú de navegación y pie de página) pasa a vivir en [`src/Layout/Layout.jsx`](./src/Layout/Layout.jsx).
-3. **El punto de entrada (`src/main.jsx`)** ya no renderiza `<App />`, sino `<RouterProvider router={router} />`.
-
-Por tanto, **borramos `src/App.jsx` y `src/App.css`** para mantener el proyecto limpio y quitamos `import App from './App.jsx'` de [`src/main.jsx`](./src/main.jsx).
-
----
-
-## 🧱 Paso 3: Crear el `Layout.jsx` (`<Link>` y `<Outlet />`)
-
-El archivo [`src/Layout/Layout.jsx`](./src/Layout/Layout.jsx) define la plantilla fija que se mantiene visible en todas las pantallas (como la barra de navegación superior y el pie de página):
-
-```jsx
-import { Outlet, Link } from "react-router"
-
-function Layout() {
-  return (
-    <div>
-        <header>
-            <nav>
-                <Link to="/">Home</Link>
-                <Link to="/contacto">Contact</Link>
-                <Link to="/tema/1">Componentes tontos</Link>
-                <Link to="/tema/2">Props and children</Link>
-            </nav>
-        </header>
-        <main>
-            <Outlet/>
-        </main>
-        <footer>
-            <p>Todos derechos estan reservados en esta web</p>
-        </footer>
-    </div>
-  )
-}
-
-export default Layout
-```
-
-### Conceptos clave en `Layout.jsx`:
-- **`<Link to="...">`**: Sustituye a la etiqueta `<a href="...">` tradicional de HTML. Cambia la URL y renderiza la nueva vista instantáneamente **sin recargar la página**.
-- **`<Outlet />`**: Es el "hueco" o marcador de posición dinámico donde React Router inyectará el componente de la página hija que coincida con la URL actual (`Home`, `Contact`, `TopicsPage` o `NotFound`).
-
----
-
-## 📄 Paso 4: Crear las Páginas Estáticas (`Home`, `Contact`, `NotFound`)
-
-### 1. Página de Inicio ([`src/pages/Home/Home.jsx`](./src/pages/Home/Home.jsx))
-Es la vista que se carga en la ruta raíz `"/"` (recoge el contenido que antiguamente teníamos en `App.jsx`):
-
-```jsx
-import Card from "../../components/Card"
-import Counter from "../../components/Counter"
-import Timer from "../../components/Timer"
-
-function Home() {
-  return (
-    <div>
-        <section id="center">
-            <Card/>
-            <Counter/>
-            <Timer/>
-        </section>
-    </div>
-  )
-}
-
-export default Home
-```
-
-### 2. Página de Contacto ([`src/pages/Contact/Contact.jsx`](./src/pages/Contact/Contact.jsx))
-Es la vista que se muestra al navegar a `"/contacto"`:
-
-```jsx
-function Contact() {
-  return (
-    <div>Contact</div>
-  )
-}
-
-export default Contact
-```
-
-### 3. Página 404 No Encontrada ([`src/pages/NotFound/NotFound.jsx`](./src/pages/NotFound/NotFound.jsx))
-Se muestra cuando el usuario intenta acceder a una URL que no existe:
-
-```jsx
-function NotFound() {
-  return (
-    <div>La página solicitada no existe</div>
-  )
-}
-
-export default NotFound
-```
-
----
-
-## 🗺️ Paso 5: Configurar el Router (`src/router/index.jsx`)
-
-En [`src/router/index.jsx`](./src/router/index.jsx) usamos `createBrowserRouter` para definir el árbol de rutas. Colocamos `Layout` como ruta padre (`path: "/"`) y todas las páginas dentro de su propiedad `children`:
-
-```jsx
-import { createBrowserRouter } from "react-router";
-import Layout from "../Layout/Layout";
-import Home from "../pages/Home/Home";
-import Contact from "../pages/Contact/Contact";
-import TopicsPage from "../pages/Topics/TopicsPage";
-import NotFound from "../pages/NotFound/NotFound";
-
-export const router = createBrowserRouter([
-    {
-        path: "/",
-        element: <Layout/>,
-        children: [
-            {
-                path: "/",
-                element: <Home/>
-            },
-            {
-                path: "/contacto",
-                element: <Contact/>
-            },
-            {
-                path: "/tema/:id",
-                element: <TopicsPage/>
-            },
-            {
-                path: "*",
-                element: <NotFound/>
-            }
-        ],
-    },
-])
-```
-
-### Resumen de tipos de rutas configuradas:
-| Ruta (`path`) | Componente | Tipo de ruta | Explicación |
-| :--- | :--- | :--- | :--- |
-| `"/"` (padre) | `<Layout />` | **Ruta contenedora** | Envuelve a las rutas hijas con el `<header>` y `<footer>`, renderizando cada hija dentro de `<Outlet />`. |
-| `"/"` (hija) | `<Home />` | **Ruta estática raíz** | Se muestra al entrar a la página de inicio. |
-| `"/contacto"` | `<Contact />` | **Ruta estática** | Se muestra al navegar a `/contacto`. |
-| `"/tema/:id"` | `<TopicsPage />` | **Ruta dinámica** | `:id` es un segmento dinámico cuyo valor leemos con `useParams()`. |
-| `"*"` | `<NotFound />` | **Ruta comodín (404)** | Captura cualquier URL que no coincida con ninguna de las rutas anteriores. |
-
----
-
-## 🔍 Paso 6: El Hook `useParams` y Rutas Dinámicas (`TopicsPage.jsx`)
-
-### ¿Qué es `useParams` y para qué sirve?
-En una aplicación real no creamos un archivo `.jsx` distinto para cada producto, usuario o tema (`/tema/1`, `/tema/2`, `/tema/3`...). En su lugar, creamos **una única plantilla de página** ([`TopicsPage.jsx`](./src/pages/Topics/TopicsPage.jsx)) y una **ruta dinámica** (`/tema/:id`).
-
-**`useParams`** es un Hook de React Router que nos permite **leer los parámetros dinámicos de la URL actual** desde dentro del componente, devolviendo un objeto clave-valor con los segmentos que llevan dos puntos (`:`) en el `path`.
-
----
-
-### ¿Cómo se conecta todo el flujo de `useParams`?
-
-El funcionamiento de `useParams` se divide en **3 piezas conectadas**:
-
-#### 1️⃣ En el Router ([`src/router/index.jsx`](./src/router/index.jsx)): Definimos el nombre del parámetro con `:id`
-```jsx
-{
-    path: "/tema/:id", // 👈 Los dos puntos (:) indican que "id" es una variable dinámica
-    element: <TopicsPage/>
-}
-```
-> El nombre que pongas después de `:` (en este caso `id`) será exactamente el nombre de la propiedad que devolverá `useParams()`.
-
-#### 2️⃣ En la Navegación ([`src/Layout/Layout.jsx`](./src/Layout/Layout.jsx)): Enviamos el valor en la URL
-```jsx
-<Link to="/tema/1">Componentes tontos</Link>
-<Link to="/tema/2">Props and children</Link>
-```
-- Al hacer clic en el primer enlace, la URL pasa a ser `/tema/1` (`id` vale `"1"`).
-- Al hacer clic en el segundo enlace, la URL pasa a ser `/tema/2` (`id` vale `"2"`).
-
-#### 3️⃣ En el Componente ([`src/pages/Topics/TopicsPage.jsx`](./src/pages/Topics/TopicsPage.jsx)): Capturamos el valor con `useParams()`
-
-```jsx
-import { useParams } from "react-router"
-
-const topics = [
-  {
-    id: 1,
-    title: 'Componentes Tontos',
-    description: 'Funciones puras que reciben props y solo devuelven JSX visual sin lógica interna.',
-    tag: 'Básico',
-    tagColor: 'purple',
-  },
-  {
-    id: 2,
-    title: 'Props & Children',
-    description: 'Parámetros e inyección de contenido que permiten reutilizar Card en múltiples casos.',
-    tag: 'Fundamental',
-    tagColor: 'blue',
-  },
-  {
-    id: 3,
-    title: 'Tailwind Tokens',
-    description: 'Uso de @theme para definir bg-surface y bg-canvas evitando magic numbers [#...].',
-    tag: 'Estilos',
-    tagColor: 'cyan',
-  },
-]
-
-function TopicsPage() {
-    // 1. Extraemos el parámetro "id" de la URL (ej: si la URL es /tema/1, id = "1")
-    const { id } = useParams()
-
-    // 2. Buscamos en el array el objeto cuyo id coincida (convirtiendo id a número)
-    const topic = topics.find((item) => item.id === Number(id))
-
-  return (
-    <section>
-        <span>{topic.id}</span>
-        <h2>{topic.title}</h2>
-        <p>{topic.description}</p>
-    </section>
-  )
-}
-
-export default TopicsPage
-```
-
----
-
-### Detalles clave a tener en cuenta con `useParams`:
-
-1. **Desestructuración directa (`const { id } = useParams()`)**:
-   - `useParams()` devuelve un objeto. Si la URL es `/tema/2`, devuelve `{ id: "2" }`.
-   - Al hacer `const { id } = useParams()`, extraemos directamente la variable `id`.
-2. **¡Los parámetros de la URL siempre son `string` (texto)!**:
-   - Aunque en la URL veamos un número (`/tema/1`), `useParams()` siempre entrega `"1"` como cadena de texto (`string`).
-   - En nuestro array `topics`, la propiedad `id` es un número (`id: 1`).
-   - Si comparásemos `item.id === id` con triple igual (`===`), daría `false` porque `1 === "1"` son de distinto tipo.
-   - Por eso utilizamos **`Number(id)`** dentro de `topics.find((item) => item.id === Number(id))` para transformarlo a número antes de comparar.
-
----
-
-## 🚀 Paso 7: Proveer el Router en `src/main.jsx` (sin `App.jsx`)
-
-Finalmente, en [`src/main.jsx`](./src/main.jsx) eliminamos la importación de `App.jsx` e importamos `RouterProvider` de `react-router` junto con nuestro `router`, dejando `<RouterProvider router={router} />` como raíz de la aplicación:
-
-```jsx
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { RouterProvider } from 'react-router'
-import './index.css'
-import { router } from './router/index.jsx'
-
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <RouterProvider router={router}/>
-  </StrictMode>,
-)
-```
-
----
-
-## 🌐 Paso 8: Desplegar en GitHub Pages (`gh-pages`)
-
-GitHub Pages publica los proyectos en una subruta con el nombre del repositorio (`https://<usuario>.github.io/react-class-crm/`). Para publicarlo hemos configurado estos **3 puntos**:
-
-### 1. Instalar `gh-pages`
-```bash
-npm install -D gh-pages --legacy-peer-deps
-```
-
-### 2. Configurar `base` en [`vite.config.js`](./vite.config.js)
-Añadimos el nombre del repositorio en la propiedad `base` (con barra al principio y al final):
 ```javascript
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
+import tailwindcss from '@tailwindcss/vite'
+
 export default defineConfig({
-  base: '/react-class-crm/',
+  base: '/react-class-crm/', // 👈 Pon aquí el nombre exacto de tu repositorio de GitHub
   plugins: [
     react(),
     tailwindcss(),
@@ -330,8 +45,56 @@ export default defineConfig({
 })
 ```
 
-### 3. Scripts de despliegue en [`package.json`](./package.json)
-En `scripts` añadimos `predeploy` y `deploy`:
+> [!WARNING]
+> **¿Qué ocurre si olvidas poner `base`?**
+> La página se quedará completamente en blanco en GitHub Pages porque el navegador intentará buscar los archivos JS y CSS en `https://usuario.github.io/assets/...` en lugar de `https://usuario.github.io/react-class-crm/assets/...`, dando error `404 (Not Found)`.
+
+---
+
+### Paso 3: Añadir los scripts `predeploy` y `deploy` en [`package.json`](./package.json)
+Abre tu [`package.json`](./package.json) y dentro de `"scripts"` añade estas dos líneas:
+
+```json
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "predeploy": "npm run build",
+  "deploy": "gh-pages -d dist"
+}
+```
+
+- **`predeploy`**: Se ejecuta automáticamente justo antes de `deploy`. Compila el proyecto creando la carpeta `dist/`.
+- **`deploy`**: Toma el contenido de la carpeta `dist/` y lo sube automáticamente a una rama llamada **`gh-pages`** en tu repositorio de GitHub.
+
+---
+
+### Paso 4: Publicar el proyecto
+Ejecuta en la terminal:
+
+```bash
+npm run deploy
+```
+Cuando termine, verás el mensaje **`Published`** en la consola.
+
+---
+
+## 🧭 Caso 2: Proyecto de React CON React Router
+
+Cuando tu proyecto utiliza **React Router** (`react-router`), además de todo lo anterior existen **dos problemas propios de GitHub Pages** que debemos resolver:
+
+1. **Problema 1 (La subruta del repositorio)**: La URL en GitHub Pages empieza por `/react-class-crm/`, por lo que si tus rutas buscan `"/"`, React Router pensará que estás en una ruta desconocida y mostrará tu componente `<NotFound />` (`404`).
+2. **Problema 2 (Recargar subrutas)**: Si navegas a `/react-class-crm/contacto` y recargas la página con `F5`, el servidor de GitHub Pages buscará un archivo físico llamado `contacto/index.html`, no lo encontrará y devolverá la pantalla de error 404 de GitHub.
+
+### ¿Cómo configurarlo con React Router?
+
+#### 1. Mantén `gh-pages` instalado y `base: '/react-class-crm/'` en [`vite.config.js`](./vite.config.js)
+Exactamente igual que en el Caso 1 (Pasos 1 y 2).
+
+#### 2. En [`package.json`](./package.json): Duplicar `index.html` a `404.html` en `predeploy`
+Para solucionar el **Problema 2** (que no dé error al recargar una ruta como `/contacto` o `/tema/1`), modificamos el script `predeploy` para que copie el `index.html` compilado como `404.html` dentro de `dist/`:
+
 ```json
 "scripts": {
   "dev": "vite",
@@ -342,30 +105,69 @@ En `scripts` añadimos `predeploy` y `deploy`:
   "deploy": "gh-pages -d dist"
 }
 ```
+> Así, cuando GitHub Pages no encuentre una ruta física al recargar, servirá `404.html` (que contiene tu aplicación de React) y React Router mostrará la página correcta.
 
-### Publicar en GitHub Pages:
-Cada vez que quieras subir tu web actualizada a GitHub Pages, ejecuta:
+#### 3. En [`src/router/index.jsx`](./src/router/index.jsx): Adaptar el Router para la subruta de GitHub Pages
+Para solucionar el **Problema 1**, tienes **dos alternativas** según cómo quieras que se vean tus URLs:
+
+##### Alternativa A: Usar `createHashRouter` (La más sencilla para GitHub Pages)
+Cambias `createBrowserRouter` por **`createHashRouter`**:
+```jsx
+import { createHashRouter } from "react-router";
+import Layout from "../Layout/Layout";
+import Home from "../pages/Home/Home";
+import Contact from "../pages/Contact/Contact";
+import TopicsPage from "../pages/Topics/TopicsPage";
+import NotFound from "../pages/NotFound/NotFound";
+
+export const router = createHashRouter([
+    {
+        path: "/",
+        element: <Layout/>,
+        children: [
+            { path: "/", element: <Home/> },
+            { path: "/contacto", element: <Contact/> },
+            { path: "/tema/:id", element: <TopicsPage/> },
+            { path: "*", element: <NotFound/> }
+        ],
+    },
+])
+```
+- **Ventaja**: Añade un `#` a la URL (`https://usuario.github.io/react-class-crm/#/contacto`). Ignora automáticamente la subcarpeta `/react-class-crm/` y nunca falla al recargar en GitHub Pages.
+
+##### Alternativa B: Mantener `createBrowserRouter`
+Si prefieres URLs limpias sin `#` (`https://usuario.github.io/react-class-crm/contacto`), utiliza `createBrowserRouter` junto con el script `cp dist/index.html dist/404.html` del paso anterior.
+
+#### 4. Publicar cambios
+Cada vez que hagas cambios y quieras actualizar la web en GitHub Pages:
 ```bash
 npm run deploy
 ```
 
 ---
 
-## 🏃‍♂️ Cómo ejecutar el proyecto localmente
+## ⚙️ Configuración Final en la Web de GitHub (Para Ambos Casos)
 
-1. **Instalar dependencias:**
-   ```bash
-   npm install
-   # o con pnpm:
-   pnpm install
-   ```
+Una vez ejecutado `npm run deploy` y aparezca `Published` en tu terminal:
 
-2. **Iniciar el servidor de desarrollo:**
-   ```bash
-   npm run dev
-   # o con pnpm:
-   pnpm run dev
-   ```
+1. Entra a tu repositorio en GitHub.
+2. Haz clic en la pestaña **Settings** (arriba) → **Pages** (en el menú lateral izquierdo).
+3. En la sección **Build and deployment**:
+   - **Source**: `Deploy from a branch`
+   - **Branch**: Selecciona la rama **`gh-pages`** (¡ojo!, tiene que ser **`gh-pages`**, no `main` ni otra rama donde tengas el código fuente sin compilar) y la carpeta **`/ (root)`**.
+4. Haz clic en **Save**.
+5. Espera entre 30 y 60 segundos, y abre el enlace de tu web:
+   `https://bc-contents.github.io/react-class-crm/`
 
-3. **Abrir en el navegador:**  
-   Visita [http://localhost:5173/react-class-crm/](http://localhost:5173/react-class-crm/).
+---
+
+## 📊 Resumen Comparativo: Sin React Router vs Con React Router
+
+| Archivo / Paso | Proyecto SIN React Router | Proyecto CON React Router |
+| :--- | :--- | :--- |
+| **1. Paquete** | `npm install -D gh-pages` | `npm install -D gh-pages` |
+| **2. [`vite.config.js`](./vite.config.js)** | `base: '/nombre-repo/'` | `base: '/nombre-repo/'` |
+| **3. `predeploy` en [`package.json`](./package.json)** | `"npm run build"` | `"npm run build && cp dist/index.html dist/404.html"` |
+| **4. `deploy` en [`package.json`](./package.json)** | `"gh-pages -d dist"` | `"gh-pages -d dist"` |
+| **5. [`src/router/index.jsx`](./src/router/index.jsx)** | *(No aplica)* | Usar `createHashRouter` o `createBrowserRouter` |
+| **6. GitHub Settings → Pages** | Rama **`gh-pages`** `/ (root)` | Rama **`gh-pages`** `/ (root)` |
