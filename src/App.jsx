@@ -7,7 +7,7 @@ function App() {
 
   return (
     <>
-      <section className='bg-red-500' id="center">
+      <section id="center">
         <Card/>
         <Counter/>
         <Timer/>
