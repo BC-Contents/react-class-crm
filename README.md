@@ -6,13 +6,19 @@ Este proyecto está diseñado como material didáctico para aprender a configura
 
 ## 📁 Estructura de carpetas para el enrutado
 
+Al pasar a una arquitectura con **React Router**, **eliminamos `App.jsx` y `App.css`**, ya que su responsabilidad se divide entre el enrutador (`router/index.jsx`), la plantilla general (`Layout.jsx`) y la página principal (`Home.jsx`):
+
 ```text
 src/
 ├── Layout/
 │   └── Layout.jsx          # Estructura común (Header, Outlet, Footer)
+├── components/
+│   ├── Card.jsx
+│   ├── Counter.jsx
+│   └── Timer.jsx
 ├── pages/
 │   ├── Home/
-│   │   └── Home.jsx        # Página principal ("/")
+│   │   └── Home.jsx        # Página principal ("/") — sustituye al antiguo App.jsx
 │   ├── Contact/
 │   │   └── Contact.jsx     # Página de contacto ("/contacto")
 │   ├── Topics/
@@ -21,6 +27,7 @@ src/
 │       └── NotFound.jsx    # Página de error 404 ("*")
 ├── router/
 │   └── index.jsx           # Definición de rutas con createBrowserRouter
+├── index.css               # Estilos globales
 └── main.jsx                # Punto de entrada con <RouterProvider />
 ```
 
@@ -38,7 +45,19 @@ pnpm add react-router
 
 ---
 
-## 🧱 Paso 2: Crear el `Layout.jsx` (`<Link>` y `<Outlet />`)
+## 🗑️ Paso 2: Eliminar `App.jsx` y `App.css`
+
+Cuando creamos un proyecto nuevo con Vite, por defecto todo se renderiza dentro de `App.jsx`. Sin embargo, al implementar **React Router** con `createBrowserRouter`:
+
+1. **Lo que antes estaba en `App.jsx`** (los componentes `Card`, `Counter`, `Timer`) pasa a vivir en su propia página: [`src/pages/Home/Home.jsx`](./src/pages/Home/Home.jsx).
+2. **La estructura común de la web** (menú de navegación y pie de página) pasa a vivir en [`src/Layout/Layout.jsx`](./src/Layout/Layout.jsx).
+3. **El punto de entrada (`src/main.jsx`)** ya no renderiza `<App />`, sino `<RouterProvider router={router} />`.
+
+Por tanto, **borramos `src/App.jsx` y `src/App.css`** para mantener el proyecto limpio y quitamos `import App from './App.jsx'` de [`src/main.jsx`](./src/main.jsx).
+
+---
+
+## 🧱 Paso 3: Crear el `Layout.jsx` (`<Link>` y `<Outlet />`)
 
 El archivo [`src/Layout/Layout.jsx`](./src/Layout/Layout.jsx) define la plantilla fija que se mantiene visible en todas las pantallas (como la barra de navegación superior y el pie de página):
 
@@ -75,10 +94,10 @@ export default Layout
 
 ---
 
-## 📄 Paso 3: Crear las Páginas Estáticas (`Home`, `Contact`, `NotFound`)
+## 📄 Paso 4: Crear las Páginas Estáticas (`Home`, `Contact`, `NotFound`)
 
 ### 1. Página de Inicio ([`src/pages/Home/Home.jsx`](./src/pages/Home/Home.jsx))
-Es la vista que se carga en la ruta raíz `"/"`:
+Es la vista que se carga en la ruta raíz `"/"` (recoge el contenido que antiguamente teníamos en `App.jsx`):
 
 ```jsx
 import Card from "../../components/Card"
@@ -128,7 +147,7 @@ export default NotFound
 
 ---
 
-## 🗺️ Paso 4: Configurar el Router (`src/router/index.jsx`)
+## 🗺️ Paso 5: Configurar el Router (`src/router/index.jsx`)
 
 En [`src/router/index.jsx`](./src/router/index.jsx) usamos `createBrowserRouter` para definir el árbol de rutas. Colocamos `Layout` como ruta padre (`path: "/"`) y todas las páginas dentro de su propiedad `children`:
 
@@ -177,7 +196,7 @@ export const router = createBrowserRouter([
 
 ---
 
-## 🔍 Paso 5: El Hook `useParams` y Rutas Dinámicas (`TopicsPage.jsx`)
+## 🔍 Paso 6: El Hook `useParams` y Rutas Dinámicas (`TopicsPage.jsx`)
 
 ### ¿Qué es `useParams` y para qué sirve?
 En una aplicación real no creamos un archivo `.jsx` distinto para cada producto, usuario o tema (`/tema/1`, `/tema/2`, `/tema/3`...). En su lugar, creamos **una única plantilla de página** ([`TopicsPage.jsx`](./src/pages/Topics/TopicsPage.jsx)) y una **ruta dinámica** (`/tema/:id`).
@@ -270,9 +289,9 @@ export default TopicsPage
 
 ---
 
-## 🚀 Paso 6: Proveer el Router en `src/main.jsx`
+## 🚀 Paso 7: Proveer el Router en `src/main.jsx` (sin `App.jsx`)
 
-Finalmente, en [`src/main.jsx`](./src/main.jsx) importamos `RouterProvider` de `react-router` y nuestro `router`, reemplazando `<App />` por `<RouterProvider router={router} />`:
+Finalmente, en [`src/main.jsx`](./src/main.jsx) eliminamos la importación de `App.jsx` e importamos `RouterProvider` de `react-router` junto con nuestro `router`, dejando `<RouterProvider router={router} />` como raíz de la aplicación:
 
 ```jsx
 import { StrictMode } from 'react'
