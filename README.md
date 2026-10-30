@@ -1,191 +1,291 @@
-# Guía de React: `useState` y `useEffect`
+# Guía Paso a Paso: Navegación con React Router y `useParams`
 
-Este proyecto está diseñado como material didáctico para aprender y dominar dos de los Hooks más importantes de React: **`useState`** (manejo de estado local) y **`useEffect`** (manejo de efectos secundarios y ciclo de vida del componente).
+Este proyecto está diseñado como material didáctico para aprender a configurar y utilizar **React Router**, creando una **SPA (Single Page Application)** con múltiples rutas, plantillas compartidas (`Layout`), rutas dinámicas con **`useParams`** y página de error 404 sin que el navegador recargue la página.
 
 ---
 
-## 🔢 1. El Hook `useState` (`Counter.jsx`)
+## 📁 Estructura de carpetas para el enrutado
 
-### ¿Qué es `useState`?
-`useState` es un Hook de React que permite añadir **estado local** a un componente funcional. Cuando el estado cambia mediante su función actualizadora, React **vuelve a renderizar** el componente automáticamente para reflejar el nuevo valor en la pantalla.
-
-### Sintaxis básica
-```jsx
-const [estado, setEstado] = useState(valorInicial)
+```text
+src/
+├── Layout/
+│   └── Layout.jsx          # Estructura común (Header, Outlet, Footer)
+├── pages/
+│   ├── Home/
+│   │   └── Home.jsx        # Página principal ("/")
+│   ├── Contact/
+│   │   └── Contact.jsx     # Página de contacto ("/contacto")
+│   ├── Topics/
+│   │   └── TopicsPage.jsx  # Página dinámica por ID ("/tema/:id") usando useParams
+│   └── NotFound/
+│       └── NotFound.jsx    # Página de error 404 ("*")
+├── router/
+│   └── index.jsx           # Definición de rutas con createBrowserRouter
+└── main.jsx                # Punto de entrada con <RouterProvider />
 ```
-- **`estado`**: El valor actual de la variable de estado.
-- **`setEstado`**: La función encargada de actualizar ese valor y disparar el re-renderizado.
-- **`valorInicial`**: El valor con el que arranca el estado en el primer renderizado.
 
-### Implementación en [`src/components/Counter.jsx`](./src/components/Counter.jsx)
+---
+
+## 🛠️ Paso 1: Instalar React Router
+
+Instalamos el paquete `react-router` en el proyecto:
+
+```bash
+npm install react-router
+# o con pnpm:
+pnpm add react-router
+```
+
+---
+
+## 🧱 Paso 2: Crear el `Layout.jsx` (`<Link>` y `<Outlet />`)
+
+El archivo [`src/Layout/Layout.jsx`](./src/Layout/Layout.jsx) define la plantilla fija que se mantiene visible en todas las pantallas (como la barra de navegación superior y el pie de página):
 
 ```jsx
-import { useState } from "react"
+import { Outlet, Link } from "react-router"
 
-function Counter() {
-    const [count, setCount] = useState(0)
-
+function Layout() {
   return (
     <div>
-        <h1>{count}</h1>
-        <button onClick={() => setCount((c) => c - 1)}>-1</button>
-        <button onClick={() => setCount(0)}>Reiniciar</button>
-        <button onClick={() => setCount((c) => c + 1)}>+1</button>
+        <header>
+            <nav>
+                <Link to="/">Home</Link>
+                <Link to="/contacto">Contact</Link>
+                <Link to="/tema/1">Componentes tontos</Link>
+                <Link to="/tema/2">Props and children</Link>
+            </nav>
+        </header>
+        <main>
+            <Outlet/>
+        </main>
+        <footer>
+            <p>Todos derechos estan reservados en esta web</p>
+        </footer>
     </div>
   )
 }
 
-export default Counter
+export default Layout
 ```
 
-### Puntos clave explicados:
-1. **Inicialización (`useState(0)`)**: El contador empieza en `0`.
-2. **Actualización con función callback (`setCount((c) => c + 1)`)**: En lugar de pasar `count + 1` directamente, pasamos una función `(c) => c + 1`. Esto es una **buena práctica en React** porque garantiza que siempre trabajamos con el valor más reciente del estado (`c`), evitando errores si ocurren múltiples actualizaciones seguidas.
-3. **Actualización con valor directo (`setCount(0)`)**: En el botón "Reiniciar", como no dependemos del valor anterior sino que queremos fijarlo directamente a `0`, le pasamos `0` como argumento.
+### Conceptos clave en `Layout.jsx`:
+- **`<Link to="...">`**: Sustituye a la etiqueta `<a href="...">` tradicional de HTML. Cambia la URL y renderiza la nueva vista instantáneamente **sin recargar la página**.
+- **`<Outlet />`**: Es el "hueco" o marcador de posición dinámico donde React Router inyectará el componente de la página hija que coincida con la URL actual (`Home`, `Contact`, `TopicsPage` o `NotFound`).
 
 ---
 
-## ⏱️ 2. El Hook `useEffect` (`Timer.jsx`)
+## 📄 Paso 3: Crear las Páginas Estáticas (`Home`, `Contact`, `NotFound`)
 
-### ¿Qué es `useEffect`?
-`useEffect` permite ejecutar **efectos secundarios** (*side effects*) en componentes funcionales, tales como temporizadores (`setInterval`, `setTimeout`), peticiones a APIs (`fetch`), o suscripciones a eventos del navegador.
-
-Su estructura consta de tres partes fundamentales:
-```jsx
-useEffect(() => {
-  // 1. Código del efecto (se ejecuta al montar o cuando cambia una dependencia)
-
-  return () => {
-    // 2. Función de limpieza / cleanup (se ejecuta antes de re-ejecutar el efecto o al desmontar el componente)
-  }
-}, [/* 3. Array de dependencias */])
-```
-
----
-
-### Evolución del componente `Timer`: De `[]` vacío a `[isActive]`
-
-En clase construimos [`src/components/Timer.jsx`](./src/components/Timer.jsx) en **dos fases** para comprender cómo funciona el array de dependencias `[]`.
-
-#### Fase 1: `useEffect` con el array de dependencias vacío `[]`
-
-Primeramente creamos el temporizador dejando el array de dependencias vacío `[]`:
+### 1. Página de Inicio ([`src/pages/Home/Home.jsx`](./src/pages/Home/Home.jsx))
+Es la vista que se carga en la ruta raíz `"/"`:
 
 ```jsx
-import { useState, useEffect } from "react"
+import Card from "../../components/Card"
+import Counter from "../../components/Counter"
+import Timer from "../../components/Timer"
 
-function Timer() {
-    const [seconds, setSeconds] = useState(0)
-
-    useEffect(() => {
-        const intervalId = setInterval(() => {
-            setSeconds((prev) => prev + 1)
-        }, 1000)
-
-        return () => {
-            clearInterval(intervalId)
-        }
-    }, []) // 👈 Array vacío: solo se ejecuta UNA vez al montar el componente
-
-    return (
-        <div>
-            <h1>{seconds}</h1>
-        </div>
-    )
-}
-```
-
-**¿Por qué funcionaba así?**
-- **Con `[]` vacío**: Le indicamos a React que el efecto **no depende de ningún estado ni prop**, por lo que el `setInterval` se crea **únicamente una vez** cuando el componente aparece en pantalla (*mount*).
-- **Uso de `(prev) => prev + 1`**: Como el efecto solo se ejecuta una vez al principio, usar la función actualizadora `(prev) => prev + 1` permite incrementar los segundos cada segundo sin necesitar incluir `seconds` dentro de `[]`.
-- **Función de limpieza (`clearInterval`)**: Si el componente se elimina de la pantalla (*unmount*), React ejecuta el `return` para detener el intervalo y evitar fugas de memoria (*memory leaks*).
-
----
-
-#### Fase 2: Añadiendo `[isActive]` al array de dependencias (Versión Final)
-
-Después quisimos añadir un botón para **Pausar y Reanudar** el temporizador mediante un segundo estado: `const [isActive, setIsActive] = useState(true)`.
-
-Si hubiéramos dejado `[]` vacío, el `useEffect` **nunca se enteraría** de que `isActive` cambió de `true` a `false` (o viceversa). Por ello, metimos `[isActive]` dentro de los corchetes:
-
-```jsx
-import { useState, useEffect } from "react"
-
-function Timer() {
-    const [seconds, setSeconds] = useState(0)
-    const [isActive, setIsActive] = useState(true)
-
-    useEffect(() => {
-        if (!isActive) return
-
-        const intervalId = setInterval(() => {
-            setSeconds((prev) => prev + 1)
-        }, 1000)
-
-        return () => {
-            clearInterval(intervalId)
-        }
-    }, [isActive]) // 👈 Se vuelve a ejecutar cada vez que cambia 'isActive'
-
+function Home() {
   return (
     <div>
-        <h1>{seconds}</h1>
-        <button onClick={() => setIsActive(!isActive)}>
-            {isActive ? 'Pausar' : 'Reanudar'}
-        </button>
-        <button onClick={() => setSeconds(0)}>Reiniciar</button>
+        <section id="center">
+            <Card/>
+            <Counter/>
+            <Timer/>
+        </section>
     </div>
   )
 }
 
-export default Timer
+export default Home
 ```
 
-**¿Qué ocurre paso a paso cuando `isActive` está en `[isActive]`?**
-
-1. **Al cargar la página (`isActive` es `true`)**:
-   - Se ejecuta el `useEffect`. Como `isActive` es `true`, no entra en el `if (!isActive) return` y arranca el `setInterval` sumando 1 cada segundo.
-2. **Al pulsar "Pausar" (`isActive` pasa a `false`)**:
-   - React detecta que `isActive` ha cambiado.
-   - **Primero** ejecuta la función de limpieza (`return () => clearInterval(intervalId)`) del efecto anterior, deteniendo el reloj inmediatamente.
-   - **Segundo** vuelve a ejecutar el `useEffect` con el nuevo valor (`isActive = false`). Al llegar a `if (!isActive) return`, sale de la función sin crear ningún intervalo nuevo. El reloj queda pausado.
-3. **Al pulsar "Reanudar" (`isActive` vuelve a `true`)**:
-   - React detecta el cambio en `[isActive]` y vuelve a correr el `useEffect`, creando un nuevo `setInterval` que continúa sumando desde el segundo en que se había quedado.
-
-### Resumen del Array de Dependencias en `useEffect`
-
-| Configuración | Cuándo se ejecuta el efecto | Caso de uso típico |
-| :--- | :--- | :--- |
-| **Sin array** `useEffect(() => {})` | En el primer render y **después de cada renderizado**. | Rara vez usado (cuidado con bucles infinitos). |
-| **Array vacío** `useEffect(() => {}, [])` | **Solo una vez**, cuando el componente se monta. | Cargar datos iniciales o iniciar un timer que no depende de estados externos (Fase 1). |
-| **Con dependencias** `useEffect(() => {}, [isActive])` | Al montarse y **cada vez que `isActive` cambie de valor**. | Reaccionar a cambios de estado o props, como pausar/reanudar un timer (Fase 2). |
-
----
-
-## 🚀 3. Integración en `App.jsx`
-
-En [`src/App.jsx`](./src/App.jsx) se importan y muestran los componentes [`Counter`](./src/components/Counter.jsx) y [`Timer`](./src/components/Timer.jsx):
+### 2. Página de Contacto ([`src/pages/Contact/Contact.jsx`](./src/pages/Contact/Contact.jsx))
+Es la vista que se muestra al navegar a `"/contacto"`:
 
 ```jsx
-import Card from './components/Card'
-import Counter from './components/Counter'
-import Timer from './components/Timer'
-import './App.css'
-
-function App() {
-
+function Contact() {
   return (
-    <>
-      <section className='bg-red-500' id="center">
-        <Card/>
-        <Counter/>
-        <Timer/>
-      </section>
-    </>
+    <div>Contact</div>
   )
 }
 
-export default App
+export default Contact
+```
+
+### 3. Página 404 No Encontrada ([`src/pages/NotFound/NotFound.jsx`](./src/pages/NotFound/NotFound.jsx))
+Se muestra cuando el usuario intenta acceder a una URL que no existe:
+
+```jsx
+function NotFound() {
+  return (
+    <div>La página solicitada no existe</div>
+  )
+}
+
+export default NotFound
+```
+
+---
+
+## 🗺️ Paso 4: Configurar el Router (`src/router/index.jsx`)
+
+En [`src/router/index.jsx`](./src/router/index.jsx) usamos `createBrowserRouter` para definir el árbol de rutas. Colocamos `Layout` como ruta padre (`path: "/"`) y todas las páginas dentro de su propiedad `children`:
+
+```jsx
+import { createBrowserRouter } from "react-router";
+import Layout from "../Layout/Layout";
+import Home from "../pages/Home/Home";
+import Contact from "../pages/Contact/Contact";
+import TopicsPage from "../pages/Topics/TopicsPage";
+import NotFound from "../pages/NotFound/NotFound";
+
+export const router = createBrowserRouter([
+    {
+        path: "/",
+        element: <Layout/>,
+        children: [
+            {
+                path: "/",
+                element: <Home/>
+            },
+            {
+                path: "/contacto",
+                element: <Contact/>
+            },
+            {
+                path: "/tema/:id",
+                element: <TopicsPage/>
+            },
+            {
+                path: "*",
+                element: <NotFound/>
+            }
+        ],
+    },
+])
+```
+
+### Resumen de tipos de rutas configuradas:
+| Ruta (`path`) | Componente | Tipo de ruta | Explicación |
+| :--- | :--- | :--- | :--- |
+| `"/"` (padre) | `<Layout />` | **Ruta contenedora** | Envuelve a las rutas hijas con el `<header>` y `<footer>`, renderizando cada hija dentro de `<Outlet />`. |
+| `"/"` (hija) | `<Home />` | **Ruta estática raíz** | Se muestra al entrar a la página de inicio. |
+| `"/contacto"` | `<Contact />` | **Ruta estática** | Se muestra al navegar a `/contacto`. |
+| `"/tema/:id"` | `<TopicsPage />` | **Ruta dinámica** | `:id` es un segmento dinámico cuyo valor leemos con `useParams()`. |
+| `"*"` | `<NotFound />` | **Ruta comodín (404)** | Captura cualquier URL que no coincida con ninguna de las rutas anteriores. |
+
+---
+
+## 🔍 Paso 5: El Hook `useParams` y Rutas Dinámicas (`TopicsPage.jsx`)
+
+### ¿Qué es `useParams` y para qué sirve?
+En una aplicación real no creamos un archivo `.jsx` distinto para cada producto, usuario o tema (`/tema/1`, `/tema/2`, `/tema/3`...). En su lugar, creamos **una única plantilla de página** ([`TopicsPage.jsx`](./src/pages/Topics/TopicsPage.jsx)) y una **ruta dinámica** (`/tema/:id`).
+
+**`useParams`** es un Hook de React Router que nos permite **leer los parámetros dinámicos de la URL actual** desde dentro del componente, devolviendo un objeto clave-valor con los segmentos que llevan dos puntos (`:`) en el `path`.
+
+---
+
+### ¿Cómo se conecta todo el flujo de `useParams`?
+
+El funcionamiento de `useParams` se divide en **3 piezas conectadas**:
+
+#### 1️⃣ En el Router ([`src/router/index.jsx`](./src/router/index.jsx)): Definimos el nombre del parámetro con `:id`
+```jsx
+{
+    path: "/tema/:id", // 👈 Los dos puntos (:) indican que "id" es una variable dinámica
+    element: <TopicsPage/>
+}
+```
+> El nombre que pongas después de `:` (en este caso `id`) será exactamente el nombre de la propiedad que devolverá `useParams()`.
+
+#### 2️⃣ En la Navegación ([`src/Layout/Layout.jsx`](./src/Layout/Layout.jsx)): Enviamos el valor en la URL
+```jsx
+<Link to="/tema/1">Componentes tontos</Link>
+<Link to="/tema/2">Props and children</Link>
+```
+- Al hacer clic en el primer enlace, la URL pasa a ser `/tema/1` (`id` vale `"1"`).
+- Al hacer clic en el segundo enlace, la URL pasa a ser `/tema/2` (`id` vale `"2"`).
+
+#### 3️⃣ En el Componente ([`src/pages/Topics/TopicsPage.jsx`](./src/pages/Topics/TopicsPage.jsx)): Capturamos el valor con `useParams()`
+
+```jsx
+import { useParams } from "react-router"
+
+const topics = [
+  {
+    id: 1,
+    title: 'Componentes Tontos',
+    description: 'Funciones puras que reciben props y solo devuelven JSX visual sin lógica interna.',
+    tag: 'Básico',
+    tagColor: 'purple',
+  },
+  {
+    id: 2,
+    title: 'Props & Children',
+    description: 'Parámetros e inyección de contenido que permiten reutilizar Card en múltiples casos.',
+    tag: 'Fundamental',
+    tagColor: 'blue',
+  },
+  {
+    id: 3,
+    title: 'Tailwind Tokens',
+    description: 'Uso de @theme para definir bg-surface y bg-canvas evitando magic numbers [#...].',
+    tag: 'Estilos',
+    tagColor: 'cyan',
+  },
+]
+
+function TopicsPage() {
+    // 1. Extraemos el parámetro "id" de la URL (ej: si la URL es /tema/1, id = "1")
+    const { id } = useParams()
+
+    // 2. Buscamos en el array el objeto cuyo id coincida (convirtiendo id a número)
+    const topic = topics.find((item) => item.id === Number(id))
+
+  return (
+    <section>
+        <span>{topic.id}</span>
+        <h2>{topic.title}</h2>
+        <p>{topic.description}</p>
+    </section>
+  )
+}
+
+export default TopicsPage
+```
+
+---
+
+### Detalles clave a tener en cuenta con `useParams`:
+
+1. **Desestructuración directa (`const { id } = useParams()`)**:
+   - `useParams()` devuelve un objeto. Si la URL es `/tema/2`, devuelve `{ id: "2" }`.
+   - Al hacer `const { id } = useParams()`, extraemos directamente la variable `id`.
+2. **¡Los parámetros de la URL siempre son `string` (texto)!**:
+   - Aunque en la URL veamos un número (`/tema/1`), `useParams()` siempre entrega `"1"` como cadena de texto (`string`).
+   - En nuestro array `topics`, la propiedad `id` es un número (`id: 1`).
+   - Si comparásemos `item.id === id` con triple igual (`===`), daría `false` porque `1 === "1"` son de distinto tipo.
+   - Por eso utilizamos **`Number(id)`** dentro de `topics.find((item) => item.id === Number(id))` para transformarlo a número antes de comparar.
+
+---
+
+## 🚀 Paso 6: Proveer el Router en `src/main.jsx`
+
+Finalmente, en [`src/main.jsx`](./src/main.jsx) importamos `RouterProvider` de `react-router` y nuestro `router`, reemplazando `<App />` por `<RouterProvider router={router} />`:
+
+```jsx
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { RouterProvider } from 'react-router'
+import './index.css'
+import { router } from './router/index.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <RouterProvider router={router}/>
+  </StrictMode>,
+)
 ```
 
 ---
