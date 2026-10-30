@@ -1,35 +1,41 @@
 # Guía Paso a Paso: Desplegar un Proyecto de React + Vite en GitHub Pages
 
-Esta guía explica paso a paso todas las configuraciones necesarias para publicar una aplicación de **React con Vite** en **GitHub Pages**, tanto si es un **proyecto básico sin React Router** como si es un **proyecto multipágina con React Router**.
+Esta guía explica paso a paso todas las configuraciones necesarias para publicar una aplicación de **React con Vite** en **GitHub Pages**, tanto para un **proyecto sin React Router** como para un **proyecto con React Router**, además de cómo configurar la rama **`gh-pages`** en los ajustes del repositorio.
 
 ---
 
-## 💡 Concepto Previo: ¿Por qué no basta con hacer `git push`?
+## 🌿 ¿Qué es la rama `gh-pages` y qué hace exactamente?
 
-Los navegadores y el servidor de GitHub Pages **no entienden archivos `.jsx`** ni pueden ejecutar directamente la carpeta `src/` o `node_modules/`.
-- **Tus ramas de código (`main`, `react-router`, `github-pages`)**: Guardan el código fuente donde programas.
-- **La rama `gh-pages` (automática)**: Guarda únicamente la carpeta **`dist/`** (tu proyecto ya compilado y transformado a HTML, CSS y JavaScript puro mediante `npm run build`). GitHub Pages leerá esta rama `gh-pages` para mostrar la web en internet.
+Cuando subimos un proyecto normal a GitHub con `git push`, subimos nuestro **código fuente** (la carpeta `src/`, archivos `.jsx`, `package.json`, etc.) a la rama `main`. Sin embargo, **el navegador y GitHub Pages no entienden archivos `.jsx` ni saben ejecutar React directamente**; si intentas publicar la rama `main`, la página se quedará en blanco con error `404 (main.jsx not found)`.
+
+Aquí es donde entra el paquete **`gh-pages`** y la rama automática **`gh-pages`**:
+
+1. **Compilación (`npm run build`)**: Vite toma todo tu proyecto de React (`src/`) y lo traduce/empaqueta en una carpeta llamada **`dist/`**, que contiene únicamente un `index.html` y una carpeta `assets/` con código HTML, CSS y JavaScript puro que cualquier navegador entiende.
+2. **Creación automática de la rama `gh-pages`**: Al ejecutar el despliegue (`npm run deploy` o `npx gh-pages -d dist`), la librería crea automáticamente en tu repositorio de GitHub una rama nueva llamada **`gh-pages`** y sube a ella **únicamente el contenido de la carpeta `dist/`** (sin `src/`, sin `package.json` y sin `node_modules/`).
+3. **Separación limpia**:
+   - Tu rama **`main`** (o tu rama de trabajo) **conserva todo tu código de React intacto** para seguir programando.
+   - La rama **`gh-pages`** contiene **solo la web ya compilada (`index.html` + `assets/`)** lista para que el servidor de GitHub Pages la muestre funcionando en internet.
 
 ---
 
 ## 🚀 Caso 1: Proyecto de React SIN React Router
 
-Si tu proyecto de React solo tiene componentes dentro de `App.jsx` y **no utiliza `react-router`**, sigue estos **4 pasos**:
+Si tu proyecto de React no utiliza `react-router` (o es un proyecto estándar con `App.jsx`), sigue estos **4 pasos**:
 
 ### Paso 1: Instalar el paquete `gh-pages`
-Ejecuta en la terminal dentro de tu proyecto:
+Ejecuta en la terminal dentro de la carpeta de tu proyecto:
 
 ```bash
 npm install -D gh-pages
 ```
-*(Si aparece un aviso de dependencias `ERESOLVE`, añade `--legacy-peer-deps` al final: `npm install -D gh-pages --legacy-peer-deps`)*.
+*(Nota: Si en consola sale un error de dependencias `ERESOLVE`, ejecuta `npm install -D gh-pages --legacy-peer-deps`)*.
 
 ---
 
 ### Paso 2: Configurar `base` en [`vite.config.js`](./vite.config.js)
-GitHub Pages no publica tu proyecto en la raíz del dominio (`https://usuario.github.io/`), sino dentro de una subcarpeta con el **nombre exacto de tu repositorio** (`https://usuario.github.io/nombre-de-tu-repo/`).
+GitHub Pages publica los proyectos dentro de una subcarpeta con el **nombre exacto de tu repositorio** (`https://usuario.github.io/nombre-de-tu-repo/`).
 
-Abre [`vite.config.js`](./vite.config.js) y añade la propiedad `base` con el nombre de tu repositorio entre barras `/`:
+Abre [`vite.config.js`](./vite.config.js) y añade la propiedad `base` con el nombre exacto de tu repositorio de GitHub entre barras `/`:
 
 ```javascript
 import react from '@vitejs/plugin-react'
@@ -37,22 +43,19 @@ import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  base: '/react-class-crm/', // 👈 Pon aquí el nombre exacto de tu repositorio de GitHub
+  base: '/react-class-crm/', // 👈 Pon aquí el nombre exacto de tu repositorio entre barras /
   plugins: [
     react(),
     tailwindcss(),
   ],
 })
 ```
-
-> [!WARNING]
-> **¿Qué ocurre si olvidas poner `base`?**
-> La página se quedará completamente en blanco en GitHub Pages porque el navegador intentará buscar los archivos JS y CSS en `https://usuario.github.io/assets/...` en lugar de `https://usuario.github.io/react-class-crm/assets/...`, dando error `404 (Not Found)`.
+> **¡Importante! Guarda el archivo (`Ctrl + S` / `Cmd + S`)** después de añadir `base`. Si no pones `base`, la web en GitHub Pages se quedará en blanco porque no encontrará la carpeta `assets/`.
 
 ---
 
-### Paso 3: Añadir los scripts `predeploy` y `deploy` en [`package.json`](./package.json)
-Abre tu [`package.json`](./package.json) y dentro de `"scripts"` añade estas dos líneas:
+### Paso 3: Configurar `predeploy` y `deploy` en [`package.json`](./package.json)
+Abre tu [`package.json`](./package.json) y dentro de `"scripts"` añade `"predeploy"` y `"deploy"`:
 
 ```json
 "scripts": {
@@ -64,110 +67,89 @@ Abre tu [`package.json`](./package.json) y dentro de `"scripts"` añade estas do
   "deploy": "gh-pages -d dist"
 }
 ```
+> **¡Recuerda guardar el archivo `package.json` (`Ctrl + S` / `Cmd + S`) antes de seguir!**
 
-- **`predeploy`**: Se ejecuta automáticamente justo antes de `deploy`. Compila el proyecto creando la carpeta `dist/`.
-- **`deploy`**: Toma el contenido de la carpeta `dist/` y lo sube automáticamente a una rama llamada **`gh-pages`** en tu repositorio de GitHub.
+- **`"predeploy": "npm run build"`**: Se ejecuta automáticamente antes de `deploy` y genera la carpeta `dist/`.
+- **`"deploy": "gh-pages -d dist"`**: Sube la carpeta `dist/` a la rama `gh-pages` de tu GitHub.
 
 ---
 
-### Paso 4: Publicar el proyecto
+### Paso 4: Ejecutar el despliegue en la terminal
 Ejecuta en la terminal:
 
 ```bash
 npm run deploy
 ```
-Cuando termine, verás el mensaje **`Published`** en la consola.
+
+> [!TIP]
+> **¿Te sale el error `ENOENT: no such file or directory, stat '.../build'` al hacer `npm run deploy`?**
+> Eso ocurre si `package.json` no se ha guardado (`Ctrl + S`), si pusiste `-d build` en vez de `-d dist`, o si tienes otra carpeta abierta en el editor.
+> También puedes compilar y subir manualmente con estos dos comandos directos:
+> ```bash
+> npm run build
+> npx gh-pages -d dist
+> ```
+
+Cuando termine correctamente, aparecerá la palabra **`Published`** en la terminal.
 
 ---
 
 ## 🧭 Caso 2: Proyecto de React CON React Router
 
-Cuando tu proyecto utiliza **React Router** (`react-router`), además de todo lo anterior existen **dos problemas propios de GitHub Pages** que debemos resolver:
+Si tu proyecto utiliza **React Router** (`react-router`), se hacen los mismos pasos anteriores pero teniendo en cuenta las rutas:
 
-1. **Problema 1 (La subruta del repositorio)**: La URL en GitHub Pages empieza por `/react-class-crm/`, por lo que si tus rutas buscan `"/"`, React Router pensará que estás en una ruta desconocida y mostrará tu componente `<NotFound />` (`404`).
-2. **Problema 2 (Recargar subrutas)**: Si navegas a `/react-class-crm/contacto` y recargas la página con `F5`, el servidor de GitHub Pages buscará un archivo físico llamado `contacto/index.html`, no lo encontrará y devolverá la pantalla de error 404 de GitHub.
-
-### ¿Cómo configurarlo con React Router?
-
-#### 1. Mantén `gh-pages` instalado y `base: '/react-class-crm/'` en [`vite.config.js`](./vite.config.js)
-Exactamente igual que en el Caso 1 (Pasos 1 y 2).
-
-#### 2. En [`package.json`](./package.json): Duplicar `index.html` a `404.html` en `predeploy`
-Para solucionar el **Problema 2** (que no dé error al recargar una ruta como `/contacto` o `/tema/1`), modificamos el script `predeploy` para que copie el `index.html` compilado como `404.html` dentro de `dist/`:
-
-```json
-"scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "lint": "eslint .",
-  "preview": "vite preview",
-  "predeploy": "npm run build && cp dist/index.html dist/404.html",
-  "deploy": "gh-pages -d dist"
-}
-```
-> Así, cuando GitHub Pages no encuentre una ruta física al recargar, servirá `404.html` (que contiene tu aplicación de React) y React Router mostrará la página correcta.
-
-#### 3. En [`src/router/index.jsx`](./src/router/index.jsx): Adaptar el Router para la subruta de GitHub Pages
-Para solucionar el **Problema 1**, tienes **dos alternativas** según cómo quieras que se vean tus URLs:
-
-##### Alternativa A: Usar `createHashRouter` (La más sencilla para GitHub Pages)
-Cambias `createBrowserRouter` por **`createHashRouter`**:
-```jsx
-import { createHashRouter } from "react-router";
-import Layout from "../Layout/Layout";
-import Home from "../pages/Home/Home";
-import Contact from "../pages/Contact/Contact";
-import TopicsPage from "../pages/Topics/TopicsPage";
-import NotFound from "../pages/NotFound/NotFound";
-
-export const router = createHashRouter([
-    {
-        path: "/",
-        element: <Layout/>,
-        children: [
-            { path: "/", element: <Home/> },
-            { path: "/contacto", element: <Contact/> },
-            { path: "/tema/:id", element: <TopicsPage/> },
-            { path: "*", element: <NotFound/> }
-        ],
-    },
-])
-```
-- **Ventaja**: Añade un `#` a la URL (`https://usuario.github.io/react-class-crm/#/contacto`). Ignora automáticamente la subcarpeta `/react-class-crm/` y nunca falla al recargar en GitHub Pages.
-
-##### Alternativa B: Mantener `createBrowserRouter`
-Si prefieres URLs limpias sin `#` (`https://usuario.github.io/react-class-crm/contacto`), utiliza `createBrowserRouter` junto con el script `cp dist/index.html dist/404.html` del paso anterior.
-
-#### 4. Publicar cambios
-Cada vez que hagas cambios y quieras actualizar la web en GitHub Pages:
-```bash
-npm run deploy
-```
+1. **Instalar `gh-pages`**:
+   ```bash
+   npm install -D gh-pages
+   ```
+2. **Añadir `base: '/nombre-de-tu-repo/'` en [`vite.config.js`](./vite.config.js)**.
+3. **Añadir los scripts en [`package.json`](./package.json)** (copiando también `index.html` a `404.html` para que GitHub Pages no dé error 404 al recargar rutas como `/contacto` o `/tema/1`):
+   ```json
+   "scripts": {
+     "dev": "vite",
+     "build": "vite build",
+     "lint": "eslint .",
+     "preview": "vite preview",
+     "predeploy": "npm run build && cp dist/index.html dist/404.html",
+     "deploy": "gh-pages -d dist"
+   }
+   ```
+   *(En Windows CMD, si `cp` falla, puedes usar simplemente `"predeploy": "npm run build"`).*
+4. **En [`src/router/index.jsx`](./src/router/index.jsx)**:
+   Para que React Router funcione directamente bajo la subruta del repositorio en GitHub Pages (`https://usuario.github.io/nombre-repo/`) sin mostrar la página de `NotFound`, puedes usar `createHashRouter` (que gestiona las rutas con `#/`) o `createBrowserRouter`.
+5. **Publicar con `npm run deploy`** (o `npm run build` seguido de `npx gh-pages -d dist`) hasta ver **`Published`**.
 
 ---
 
-## ⚙️ Configuración Final en la Web de GitHub (Para Ambos Casos)
+## ⚙️ Paso Final Obligatorio: Configurar `Settings → Pages` en GitHub con la rama `gh-pages`
 
-Una vez ejecutado `npm run deploy` y aparezca `Published` en tu terminal:
+Una vez que en tu terminal ha salido **`Published`**, la rama **`gh-pages`** ya existe en tu repositorio de GitHub. Ahora debes indicarle a GitHub Pages que lea esa rama:
 
-1. Entra a tu repositorio en GitHub.
-2. Haz clic en la pestaña **Settings** (arriba) → **Pages** (en el menú lateral izquierdo).
-3. En la sección **Build and deployment**:
-   - **Source**: `Deploy from a branch`
-   - **Branch**: Selecciona la rama **`gh-pages`** (¡ojo!, tiene que ser **`gh-pages`**, no `main` ni otra rama donde tengas el código fuente sin compilar) y la carpeta **`/ (root)`**.
-4. Haz clic en **Save**.
-5. Espera entre 30 y 60 segundos, y abre el enlace de tu web:
-   `https://bc-contents.github.io/react-class-crm/`
+1. Entra a tu repositorio en **GitHub.com**.
+2. Arriba del todo, haz clic en la pestaña **Settings** (Configuración).
+3. En el menú lateral izquierdo, baja hasta la sección *Code and automation* y haz clic en **Pages**.
+4. Dentro de **Build and deployment**:
+   - En **Source**, deja seleccionado **`Deploy from a branch`**.
+   - En **Branch**, abre el desplegable de ramas y selecciona la rama generada **`gh-pages`** (si tenías la página abierta de antes y no aparece en la lista, recarga la pestaña del navegador con `F5` / `Cmd + R`).
+   - En la carpeta de al lado, deja seleccionado **`/ (root)`**.
+   - Haz clic en el botón **Save**.
+
+> [!IMPORTANT]
+> **¿Por qué hay que elegir `gh-pages` y NO `main`?**
+> - Si eliges `main` (o cualquier otra rama de código), GitHub Pages intentará abrir tu `index.html` sin compilar (que llama a `/src/main.jsx`), la pantalla se quedará **en blanco** y en la consola del navegador saldrá `GET .../src/main.jsx 404 (Not Found)`.
+> - Al elegir **`gh-pages`**, GitHub Pages sirve el `index.html` y la carpeta `assets/` **ya compilados**, haciendo que tu aplicación de React se vea y funcione correctamente.
+
+5. Espera entre **30 y 60 segundos** tras darle a **Save**, recarga la página de Settings y arriba te aparecerá el enlace público de tu proyecto:
+   `https://<tu-usuario>.github.io/<nombre-de-tu-repositorio>/`
 
 ---
 
-## 📊 Resumen Comparativo: Sin React Router vs Con React Router
+## 📊 Resumen Rápido de Comandos
 
-| Archivo / Paso | Proyecto SIN React Router | Proyecto CON React Router |
-| :--- | :--- | :--- |
-| **1. Paquete** | `npm install -D gh-pages` | `npm install -D gh-pages` |
-| **2. [`vite.config.js`](./vite.config.js)** | `base: '/nombre-repo/'` | `base: '/nombre-repo/'` |
-| **3. `predeploy` en [`package.json`](./package.json)** | `"npm run build"` | `"npm run build && cp dist/index.html dist/404.html"` |
-| **4. `deploy` en [`package.json`](./package.json)** | `"gh-pages -d dist"` | `"gh-pages -d dist"` |
-| **5. [`src/router/index.jsx`](./src/router/index.jsx)** | *(No aplica)* | Usar `createHashRouter` o `createBrowserRouter` |
-| **6. GitHub Settings → Pages** | Rama **`gh-pages`** `/ (root)` | Rama **`gh-pages`** `/ (root)` |
+| Acción | Comando / Configuración |
+| :--- | :--- |
+| **1. Instalar herramienta** | `npm install -D gh-pages` |
+| **2. En `vite.config.js`** | Añadir `base: '/nombre-del-repositorio/',` |
+| **3. En `package.json` (`scripts`)** | `"predeploy": "npm run build"`, `"deploy": "gh-pages -d dist"` |
+| **4. Subir a GitHub Pages** | `npm run deploy` *(o `npm run build` + `npx gh-pages -d dist`)* |
+| **5. En GitHub (`Settings → Pages`)** | En **Branch**, seleccionar la rama **`gh-pages`** y **`/ (root)`** → **Save** |
