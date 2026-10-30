@@ -309,6 +309,48 @@ createRoot(document.getElementById('root')).render(
 
 ---
 
+## 🌐 Paso 8: Desplegar en GitHub Pages (`gh-pages`)
+
+GitHub Pages publica los proyectos en una subruta con el nombre del repositorio (`https://<usuario>.github.io/react-class-crm/`). Para publicarlo hemos configurado estos **3 puntos**:
+
+### 1. Instalar `gh-pages`
+```bash
+npm install -D gh-pages --legacy-peer-deps
+```
+
+### 2. Configurar `base` en [`vite.config.js`](./vite.config.js)
+Añadimos el nombre del repositorio en la propiedad `base` (con barra al principio y al final):
+```javascript
+export default defineConfig({
+  base: '/react-class-crm/',
+  plugins: [
+    react(),
+    tailwindcss(),
+  ],
+})
+```
+
+### 3. Scripts de despliegue en [`package.json`](./package.json)
+En `scripts` añadimos `predeploy` y `deploy`:
+```json
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "predeploy": "npm run build && cp dist/index.html dist/404.html",
+  "deploy": "gh-pages -d dist"
+}
+```
+
+### Publicar en GitHub Pages:
+Cada vez que quieras subir tu web actualizada a GitHub Pages, ejecuta:
+```bash
+npm run deploy
+```
+
+---
+
 ## 🏃‍♂️ Cómo ejecutar el proyecto localmente
 
 1. **Instalar dependencias:**
@@ -326,4 +368,4 @@ createRoot(document.getElementById('root')).render(
    ```
 
 3. **Abrir en el navegador:**  
-   Visita [http://localhost:5173](http://localhost:5173).
+   Visita [http://localhost:5173/react-class-crm/](http://localhost:5173/react-class-crm/).
